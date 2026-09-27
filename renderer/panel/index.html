@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>小蓝鲸 · 插件面板</title>
+  <link rel="stylesheet" href="panel.css" />
+</head>
+<body>
+  <div id="app"></div>
+
+  <script src="../../assets/vendor/vue.global.prod.js"></script>
+  <!-- 插件注册表：新增插件只需在 plugins/ 下加文件并在这里引入 -->
+  <script src="plugins/registry.js"></script>
+  <script src="plugins/translate.js"></script>
+  <script src="plugins/chat.js"></script>
+  <script src="plugins/tasks.js"></script>
+  <script src="plugins/timer.js"></script>
+  <script src="plugins/notes.js"></script>
+  <script src="plugins/settings.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+}
+
+/* 整窗可拖拽；角色图片设为 no-drag 以便接收双击/右键 */
+body {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+#pet {
+  -webkit-app-region: no-drag;
+  max-width: 296px;
+  max-height: 318px;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 12px rgba(77, 107, 254, 0.20));
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+#pet.flash {
+  animation: wiggle 0.5s ease;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-4deg) scale(1.02); }
+  75% { transform: rotate(4deg) scale(1.02); }
+}
+
+#bubble {
+  -webkit-app-region: no-drag;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 260px;
+  background: #ffffff;
+  border: 2px solid #bcd0ff;
+  color: #33508e;
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  box-shadow: 0 4px 14px rgba(77, 107, 254, 0.16);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 10;
+}
+
+/* 小尾巴 */
+#bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  margin-left: -6px;
+  border: 6px solid transparent;
+  border-top-color: #bcd0ff;
+}
+
+#bubble.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  pointer-events: none;
+}

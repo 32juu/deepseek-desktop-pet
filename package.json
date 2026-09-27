@@ -1,0 +1,44 @@
+{
+  "name": "deepseek-desktop-pet",
+  "productName": "小蓝鲸桌宠",
+  "version": "1.0.0",
+  "description": "DeepSeek 风格 Windows 轻量桌宠：中英翻译 / 智能对话 / 今日任务 / 定时器 / 笔记总结",
+  "main": "main.js",
+  "author": "deepseek-pet",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.deepseek.desktoppet",
+    "productName": "小蓝鲸桌宠",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "小蓝鲸桌宠"
+    }
+  }
+}
