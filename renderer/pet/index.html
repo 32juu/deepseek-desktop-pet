@@ -2,11 +2,16 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>小蓝鲸</title>
+  <title>蓝色大肥鱼</title>
   <link rel="stylesheet" href="pet.css" />
 </head>
 <body>
   <div id="bubble" class="bubble hidden"><span id="bubble-text"></span></div>
+
+  <!-- 气泡内那行文案现在是就地输入框（位置与插画原文案完全重合，不新增弹窗） -->
+  <input id="pet-input" type="text" spellcheck="false" />
+  <div id="pet-inline"></div>
+
   <img id="pet" src="../../assets/sprites/idle.png" alt="pet" draggable="false" />
   <script src="pet.js"></script>
 </body>

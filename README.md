@@ -1,4 +1,4 @@
-# 小蓝鲸桌宠（DeepSeek 桌面助手）
+# 蓝色大肥鱼桌宠（DeepSeek 桌面助手）
 
 基于你提供的插画八形态开发的 **Windows 轻量桌宠**：常驻桌面的蓝鲸女仆，双击即可唤出插件面板，内置翻译、智能对话、今日任务、定时器、笔记总结五大能力。
 
@@ -62,7 +62,7 @@ npm start
 1. 打开 [platform.deepseek.com](https://platform.deepseek.com) → API Keys → 创建 Key（形如 `sk-...`）。
 2. 双击桌宠 → 插件面板 → **设置** → 粘贴 Key → 保存。
 
-Key 与所有数据只保存在本机 `%APPDATA%\小蓝鲸桌宠\config.json`，不上传任何服务器。
+Key 与所有数据只保存在本机 `%APPDATA%\蓝色大肥鱼桌宠\config.json`，不上传任何服务器。
 
 **未配置 Key 时**：翻译走免费兜底引擎（MyMemory），笔记总结使用本地规则归纳，智能对话不可用并会提示原因。
 
@@ -75,8 +75,8 @@ npm run dist:portable  # 只生成便携版（无需安装，双击即用）
 
 打包产物（**本项目 dist/ 目录已内置构建好的 x64 版本，可直接双击运行，不必再执行 npm install**）：
 
-- `dist\小蓝鲸桌宠 Setup 1.0.0.exe` — 安装版（82MB，可创建桌面快捷方式、可勾选开机自启）
-- `dist\小蓝鲸桌宠 1.0.0.exe` — 便携版（81MB，免安装）
+- `dist\蓝色大肥鱼桌宠 Setup 1.0.0.exe` — 安装版（82MB，可创建桌面快捷方式、可勾选开机自启）
+- `dist\蓝色大肥鱼桌宠 1.0.0.exe` — 便携版（81MB，免安装）
 
 > 在 Linux/macOS 上打包 Windows 目标时，electron-builder 需要联网下载 Windows 版 Electron；
 > 若下载慢可设置镜像：`export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`。
@@ -143,7 +143,7 @@ deepseek-desktop-pet/
 
 数据文件位置（`npm start` 或安装版运行后自动生成）：
 
-- Windows：`%APPDATA%\小蓝鲸桌宠\` 下的 `config.json` / `tasks.json` / `notes.json`
+- Windows：`%APPDATA%\蓝色大肥鱼桌宠\` 下的 `config.json` / `tasks.json` / `notes.json`
 
 ## 八、常见问题
 

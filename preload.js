@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('petAPI', {
 
   // ---- 桌宠窗口 ----
   requestPanelToggle: () => ipcRenderer.invoke('pet:request-panel'),
+  dragMove: (dx, dy) => ipcRenderer.send('pet:drag-move', dx, dy),
   onBaseState: (cb) => on('pet:base-state', cb),
   onFlash: (cb) => on('pet:flash', cb),
   onBubble: (cb) => on('pet:bubble', cb),

@@ -1,5 +1,5 @@
 /**
- * 小蓝鲸桌宠 - Electron 主进程
+ * 蓝色大肥鱼桌宠 - Electron 主进程
  * 职责：桌宠窗口 / 插件面板窗口 / 托盘 / 定时器 / DeepSeek API / 本地存储 / IPC 路由
  */
 const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, screen, nativeImage } = require('electron');
@@ -78,7 +78,7 @@ function createPetWindow() {
   petWin.webContents.on('context-menu', (_event, params) => {
     Menu.buildFromTemplate([
       { label: '打开插件面板（双击也行）', click: () => togglePanel() },
-      { label: '我是小蓝鲸，很高兴见到你~', enabled: false },
+      { label: '我是蓝色大肥鱼，很高兴见到你~', enabled: false },
       { type: 'separator' },
       { label: '退出', click: () => app.quit() }
     ]).popup({ window: petWin, x: Math.round(params.x), y: Math.round(params.y) });
@@ -127,7 +127,7 @@ function togglePanel() {
 function createTray() {
   try {
     tray = new Tray(nativeImage.createFromPath(path.join(ASSETS, 'tray.png')));
-    tray.setToolTip('小蓝鲸桌宠');
+    tray.setToolTip('蓝色大肥鱼桌宠');
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: '打开插件面板', click: () => togglePanel() },
       { label: '双击桌宠也可以打开哦', enabled: false },
@@ -184,7 +184,7 @@ function finishTimer() {
 
 // ---------------- DeepSeek API ----------------
 const CHAT_SYSTEM_PROMPT =
-  '你是桌宠"小蓝鲸"，一只热爱帮助主人的蓝色鲸鱼女仆。' +
+  '你是桌宠"蓝色大肥鱼"，一只热爱帮助主人的蓝色大肥鱼女仆。' +
   '回答要简洁、可爱、口语化，一般不超过 120 字，可以适当使用颜文字或 emoji。';
 
 function requireApiKey() {
@@ -296,6 +296,13 @@ function afterAi() {
 }
 function registerIpc() {
   ipcMain.handle('pet:request-panel', () => togglePanel());
+
+  // 长按拖拽：渲染层在角色图片上长按后，把鼠标位移增量发过来移动窗口
+  ipcMain.on('pet:drag-move', (_e, dx, dy) => {
+    if (!petWin) return;
+    const [x, y] = petWin.getPosition();
+    petWin.setPosition(Math.round(x + dx), Math.round(y + dy));
+  });
   ipcMain.handle('panel:close', () => { if (panelWin) panelWin.hide(); });
   ipcMain.handle('panel:ready', () => {
     if (panelWin) panelWin.webContents.send('timer:tick', timerPayload());

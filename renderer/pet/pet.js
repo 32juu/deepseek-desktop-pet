@@ -5,6 +5,12 @@
  *  - 基础态(base)：idle(待机) / thinking(AI思考) / working(定时器运行) / sleeping(长时间无操作)
  *  - 闪现态(flash)：done(完成) / encourage(鼓励) / confused(疑惑)，显示数秒后自动回到基础态
  *  - 悬停态：idle 基础态下鼠标悬停 -> assistant(桌面助手/悬浮)
+ *
+ * 交互说明：
+ *  - 长按（350ms）角色图片后拖动 -> 移动窗口（通过 IPC 让主进程移动）
+ *  - 双击 -> 打开插件面板；单击 -> 随机卖萌语
+ *  - 悬停 -> 只把 assistant 插画气泡里那一行文案变成就地输入框（已把插画上的文字像素级擦除，
+ *            因此版面、UI 与原版完全一致，不额外增加弹窗）
  */
 const SPRITES = {
   idle: 'idle.png',           // 待机/互动
@@ -20,6 +26,8 @@ const SPRITES = {
 const IMG = document.getElementById('pet');
 const BUBBLE = document.getElementById('bubble');
 const BUBBLE_TEXT = document.getElementById('bubble-text');
+const PET_INPUT = document.getElementById('pet-input');
+const PET_INLINE = document.getElementById('pet-inline');
 
 let base = 'idle';
 let flashState = null;
@@ -29,13 +37,21 @@ let bubbleTimer = null;
 let sleepTimer = null;
 const IDLE_SLEEP_MS = 5 * 60 * 1000; // 5 分钟无操作进入睡觉
 
+// 就地输入框状态（需要在 render/setBase 之前声明）
+let inlineVisible = false;
+let inlineBusy = false;
+let inlineTimer = null;
+let pendingBase = null;
+
 function render() {
-  const s = flashState || (hover && base === 'idle' ? 'assistant' : base);
+  const s = flashState || (((hover || inlineVisible) && base === 'idle') ? 'assistant' : base);
   IMG.src = '../../assets/sprites/' + SPRITES[s];
+  if (s !== 'assistant' && inlineVisible) hideInline();   // 形象变了就收起就地输入框
 }
 
 function setBase(s) {
   if (!SPRITES[s]) return;
+  if (inlineBusy) { pendingBase = s; return; }            // 对话期间保持悬浮形象
   base = s;
   resetSleep();
   render();
@@ -68,13 +84,46 @@ function showBubble(text, ms) {
 function resetSleep() {
   clearTimeout(sleepTimer);
   sleepTimer = setTimeout(() => {
-    if (base === 'idle' && !flashState) {
+    if (base === 'idle' && !flashState && !inlineVisible) {
       base = 'sleeping';
       render();
       showBubble('晚安~ 明天继续哦', 3500);
     }
   }, IDLE_SLEEP_MS);
 }
+
+// ---------- 长按拖拽 ----------
+const LONG_PRESS_MS = 350;
+let pressTimer = null;
+let dragging = false;
+let suppressClick = false;
+let lastX = 0, lastY = 0;
+
+IMG.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  lastX = e.screenX; lastY = e.screenY;
+  pressTimer = setTimeout(() => {
+    dragging = true;
+    suppressClick = true;   // 拖拽结束后吞掉这次点击
+    document.body.classList.add('dragging');
+  }, LONG_PRESS_MS);
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const dx = e.screenX - lastX;
+  const dy = e.screenY - lastY;
+  lastX = e.screenX; lastY = e.screenY;
+  if (dx || dy) window.petAPI.dragMove(dx, dy);
+});
+
+window.addEventListener('mouseup', () => {
+  clearTimeout(pressTimer);
+  if (dragging) {
+    dragging = false;
+    document.body.classList.remove('dragging');
+  }
+});
 
 // ---------- 交互 ----------
 const CLICK_PHRASES = [
@@ -86,6 +135,101 @@ const CLICK_PHRASES = [
   '嘿嘿，需要帮忙就叫我~'
 ];
 
+// ---------- 就地输入框（插画气泡内那一行） ----------
+const NATIVE = { w: 399, h: 336 };                     // assistant.png 原始像素尺寸
+const STRIP = { x0: 96, x1: 300, y0: 261, y1: 291 };   // 被擦除那一行的原始像素坐标
+const DEFAULT_TEXT = '有什么需要我帮忙的吗？';
+const chatLog = [];
+
+// 由 CSS 尺寸上限 + 图片原始尺寸反推那一行的屏幕坐标
+// （不读取 IMG.getBoundingClientRect：各形象宽高比不同，且漂浮动画会带来偏移）
+function placeInline() {
+  const cs = getComputedStyle(IMG);
+  const maxW = parseFloat(cs.maxWidth) || 296;
+  const maxH = parseFloat(cs.maxHeight) || 318;
+  const s = Math.min(maxW / NATIVE.w, maxH / NATIVE.h);   // 图片实际缩放比
+  const dispW = NATIVE.w * s;
+  const dispH = NATIVE.h * s;
+  const left0 = (window.innerWidth - dispW) / 2;          // 居中
+  const top0 = window.innerHeight - dispH;                // 贴底
+  const css = {
+    left: (left0 + STRIP.x0 * s) + 'px',
+    top: (top0 + STRIP.y0 * s) + 'px',
+    width: ((STRIP.x1 - STRIP.x0) * s) + 'px',
+    height: ((STRIP.y1 - STRIP.y0) * s) + 'px',
+    lineHeight: ((STRIP.y1 - STRIP.y0) * s) + 'px',
+    fontSize: Math.round(16 * s) + 'px'
+  };
+  [PET_INPUT, PET_INLINE].forEach(el => Object.assign(el.style, css));
+}
+
+function showInput() {
+  if (base !== 'idle' || flashState) return;
+  clearTimeout(inlineTimer);
+  inlineVisible = true;
+  PET_INLINE.classList.remove('show');
+  if (!PET_INPUT.value) PET_INPUT.value = DEFAULT_TEXT;
+  IMG.classList.add('still');
+  render();
+  placeInline();
+  PET_INPUT.classList.add('show');
+  resetSleep();
+}
+
+function showInlineText(text) {
+  clearTimeout(inlineTimer);
+  inlineVisible = true;
+  IMG.classList.add('still');
+  PET_INPUT.classList.remove('show');
+  PET_INLINE.textContent = text;
+  PET_INLINE.title = text;
+  render();
+  placeInline();
+  PET_INLINE.classList.add('show');
+  resetSleep();
+}
+
+function hideInline() {
+  clearTimeout(inlineTimer);
+  inlineVisible = false;
+  PET_INPUT.classList.remove('show');
+  PET_INLINE.classList.remove('show');
+  PET_INPUT.blur();
+  IMG.classList.remove('still');
+  if (!hover) render();
+}
+
+function scheduleHideInline() {
+  clearTimeout(inlineTimer);
+  inlineTimer = setTimeout(() => {
+    if (document.activeElement !== PET_INPUT && !inlineBusy) hideInline();
+  }, 400);
+}
+
+async function sendInline() {
+  const text = PET_INPUT.value.trim();
+  if (!text || inlineBusy) return;
+  inlineBusy = true;
+  PET_INPUT.blur();
+  showInlineText('思考中…');
+  chatLog.push({ role: 'user', content: text });
+  const r = await window.petAPI.aiChat(chatLog.slice(-6));
+  if (r && r.ok) {
+    chatLog.push({ role: 'assistant', content: r.content });
+    showInlineText(String(r.content).replace(/\s+/g, ' '));
+  } else {
+    chatLog.pop();                       // 失败则不保留这条上下文
+    showInlineText('咦？出了点小问题…');
+  }
+  inlineBusy = false;
+  if (pendingBase) { base = pendingBase; pendingBase = null; }
+  render();
+  clearTimeout(inlineTimer);
+  inlineTimer = setTimeout(() => {
+    if (document.activeElement !== PET_INPUT) showInput();   // 看几秒后回到可输入状态
+  }, 6000);
+}
+
 IMG.addEventListener('mouseenter', () => {
   hover = true;
   if (base === 'sleeping') {        // 悬停唤醒
@@ -93,15 +237,17 @@ IMG.addEventListener('mouseenter', () => {
     showBubble('早上好呀~', 2200);
   }
   render();
-  if (base === 'idle' && !flashState) showBubble('有什么需要我帮忙的吗？', 2200);
+  if (base === 'idle' && !flashState) showInput();   // 悬浮 -> 气泡内那一行变成输入框
 });
 
 IMG.addEventListener('mouseleave', () => {
   hover = false;
   render();
+  scheduleHideInline();
 });
 
 IMG.addEventListener('click', () => {
+  if (suppressClick) { suppressClick = false; return; }
   if (base === 'sleeping') {        // 点击唤醒
     base = 'idle';
     render();
@@ -112,8 +258,27 @@ IMG.addEventListener('click', () => {
 });
 
 IMG.addEventListener('dblclick', () => {
+  if (suppressClick) return;
   window.petAPI.requestPanelToggle();
 });
+
+// 输入框本身：悬停其上时保持显示，回车发送，ESC 收起
+PET_INPUT.addEventListener('mouseenter', () => clearTimeout(inlineTimer));
+PET_INPUT.addEventListener('mouseleave', () => { hover = false; scheduleHideInline(); });
+
+PET_INPUT.addEventListener('focus', () => {
+  if (PET_INPUT.value === DEFAULT_TEXT) PET_INPUT.select();   // 聚焦即选中，方便直接改写
+});
+PET_INPUT.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); sendInline(); }
+  if (e.key === 'Escape') hideInline();
+});
+
+PET_INLINE.addEventListener('mouseenter', () => clearTimeout(inlineTimer));
+PET_INLINE.addEventListener('mouseleave', () => { hover = false; scheduleHideInline(); });
+PET_INLINE.addEventListener('click', () => { if (!inlineBusy) showInput(); });
+
+window.addEventListener('resize', () => { if (inlineVisible) placeInline(); });
 
 // ---------- 主进程事件 ----------
 window.petAPI.onBaseState(setBase);

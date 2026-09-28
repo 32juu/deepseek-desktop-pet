@@ -1,6 +1,6 @@
 {
   "name": "deepseek-desktop-pet",
-  "productName": "小蓝鲸桌宠",
+  "productName": "蓝色大肥鱼桌宠",
   "version": "1.0.0",
   "description": "DeepSeek 风格 Windows 轻量桌宠：中英翻译 / 智能对话 / 今日任务 / 定时器 / 笔记总结",
   "main": "main.js",
@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.deepseek.desktoppet",
-    "productName": "小蓝鲸桌宠",
+    "productName": "蓝色大肥鱼桌宠",
     "directories": {
       "output": "dist"
     },
@@ -38,7 +38,7 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "小蓝鲸桌宠"
+      "shortcutName": "蓝色大肥鱼桌宠"
     }
   }
 }

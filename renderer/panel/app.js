@@ -33,7 +33,7 @@ createApp({
     '  <header class="topbar">',
     '    <img v-if="view===\'home\'" class="logo" src="../../assets/icon.png" alt="logo" />',
     '    <button v-else class="back" @click="back">‹ 返回</button>',
-    '    <div class="title">{{ view===\'home\' ? \'小蓝鲸 · 插件面板\' : current.name }}</div>',
+    '    <div class="title">{{ view===\'home\' ? \'蓝色大肥鱼 · 插件面板\' : current.name }}</div>',
     '    <button class="close" @click="close" title="关闭">✕</button>',
     '  </header>',
     '  <main v-if="view===\'home\'" class="grid">',

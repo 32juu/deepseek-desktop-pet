@@ -27,6 +27,15 @@ body {
   animation: bob 3.2s ease-in-out infinite;
 }
 
+/* 长按拖拽时的光标反馈 */
+body.dragging,
+body.dragging #pet {
+  cursor: grabbing !important;
+}
+body.dragging #pet {
+  animation: none;
+}
+
 #pet.flash {
   animation: wiggle 0.5s ease;
 }
@@ -77,3 +86,39 @@ body {
   transform: translateX(-50%) translateY(8px);
   pointer-events: none;
 }
+
+/* ---------- 气泡内就地输入框 ----------
+ * assistant.png 里原本写着"有什么需要我帮忙的吗？"的那一行已被像素级擦除，
+ * 这里只用透明元素精确覆盖那一行位置，因此不新增任何弹窗、保持原始版面。
+ * 具体坐标在 pet.js 中按图片实际渲染尺寸换算得出 */
+#pet-input,
+#pet-inline {
+  -webkit-app-region: no-drag;
+  position: absolute;
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #081a40;              /* 与插画原文案的墨色一致 */
+  font-family: inherit;
+  text-align: left;
+  z-index: 15;
+  user-select: text;
+  cursor: text;
+}
+
+#pet-input.show,
+#pet-inline.show { display: block; }
+
+#pet-input::selection { background: #c9dbff; color: #081a40; }
+
+#pet-inline {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 输入框显示期间暂停漂浮动画，保证与插画严格对齐 */
+#pet.still { animation: none; }

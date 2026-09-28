@@ -58,7 +58,7 @@
         <div class="plug chat">
           <div class="chat-list">
             <div v-if="!msgs.length" class="empty">
-              你好呀～我是小蓝鲸，有什么想问的尽管问我哦~<br />
+              你好呀～我是蓝色大肥鱼，有什么想问的尽管问我哦~<br />
               记得先去「设置」里配置 DeepSeek API Key
             </div>
             <div v-for="(m, i) in msgs" :key="i" class="msg" :class="m.role">
