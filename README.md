@@ -2,7 +2,7 @@
 
 基于你提供的插画八形态开发的 **Windows 轻量桌宠**：常驻桌面的蓝鲸女仆，双击即可唤出插件面板，内置翻译、智能对话、今日任务、定时器、笔记总结五大能力。
 
-![八种形象](assets/sprites-preview.png)
+![八种形象](desktop/assets/sprites-preview.png)
 
 ---
 
@@ -50,10 +50,14 @@
 需要 [Node.js](https://nodejs.org/) ≥ 18（推荐 20）。
 
 ```bash
-cd deepseek-desktop-pet
+cd desktop
 npm install
 npm start
 ```
+
+> 也可在仓库根目录执行 `bash scripts/dev.sh`（等效于上面两条）。
+> 注意：若外层环境注入了 `ELECTRON_RUN_AS_NODE=1`，`npm start` 会报 `app is undefined`，
+> 开发脚本已自动 `unset` 该变量（详见 `CLAUDE.md` 第 10 节）。
 
 启动后桌宠出现在桌面，双击它即可打开插件面板。
 
@@ -69,7 +73,8 @@ Key 与所有数据只保存在本机 `%APPDATA%\蓝色大肥鱼桌宠\config.js
 ## 四、打包成 exe
 
 ```bash
-npm run dist           # 生成 NSIS 安装包 + 便携版（dist 目录）
+cd desktop
+npm run dist           # 生成 NSIS 安装包 + 便携版（desktop/dist 目录）
 npm run dist:portable  # 只生成便携版（无需安装，双击即用）
 ```
 
@@ -85,7 +90,7 @@ npm run dist:portable  # 只生成便携版（无需安装，双击即用）
 
 插件采用注册表机制，**新增插件无需改动任何既有代码**：
 
-1. 在 `renderer/panel/plugins/` 新建 `myplugin.js`：
+1. 在 `desktop/renderer/panel/plugins/` 新建 `myplugin.js`：
 
 ```js
 (() => {
@@ -106,7 +111,7 @@ npm run dist:portable  # 只生成便携版（无需安装，双击即用）
 })();
 ```
 
-2. 在 `renderer/panel/index.html` 中引入：`<script src="plugins/myplugin.js"></script>`
+2. 在 `desktop/renderer/panel/index.html` 中引入：`<script src="plugins/myplugin.js"></script>`
 
 即可在插件选择页看到新卡片。可复用能力（`window.petAPI`）：
 
@@ -119,26 +124,38 @@ npm run dist:portable  # 只生成便携版（无需安装，双击即用）
 
 - **前端**：Vue 3（本地化 `assets/vendor/vue.global.prod.js`，无需构建步骤）+ 原生 HTML/CSS，符合你"前端 js/css/html/vue"的偏好。
 - **宿主**：Electron（Chromium 透明无边框窗口 + Node），是桌宠这类"透明置顶、托盘常驻"场景最省事的选择。
-- **后端**：**没有额外 Java/Python 后端**。DeepSeek 是 HTTP 接口，直接在 Electron 主进程用 `fetch` 调用即可，省去部署后端进程，最符合"轻量"目标。若后续希望多端共用或代理转发，可再加一个 FastAPI/Python 服务，把 `main.js` 里 `DEEPSEEK_URL` 换成自研地址即可。
+- **后端**：当前仍是纯客户端（DeepSeek 是 HTTP 接口，直接在 Electron 主进程 `fetch` 调用，无需部署后端）。正在按 `docs/REFACTOR_PROMPT.md` 的里程碑逐步引入 **Python 3.12 + FastAPI + MySQL + Redis** 后端，客户端保留无后端时的本地 JSON 降级模式；M1（仓库工程化）已完成，M2 起落地后端。
 - 若未来要极致瘦身（体积从 ~100MB 降到 ~5MB），可把窗口层换成 Tauri（Rust + WebView2），渲染层代码可基本复用。
 
 ## 七、目录结构
 
 ```
 deepseek-desktop-pet/
-├─ main.js                     主进程：窗口/托盘/定时器/DeepSeek/存储/IPC
-├─ preload.js                  安全 IPC 桥接
-├─ package.json                依赖与打包配置
-├─ assets/
-│  ├─ sprites/                 8 个透明 PNG 形象（从插画裁剪）
-│  ├─ icon.png / icon.ico / tray.png
-│  ├─ vendor/vue.global.prod.js
-│  └─ sprites-preview.png
-└─ renderer/
-   ├─ pet/                     桌宠窗口（状态机 + 气泡 + 双击交互）
-   └─ panel/
-      ├─ index.html / app.js / panel.css
-      └─ plugins/              插件：translate / chat / tasks / timer / notes / settings
+├─ CLAUDE.md                       项目速查（改动前必读）
+├─ scripts/                        smoke.sh（无头冒烟）/ dev.sh（开发启动）
+├─ docs/
+│  └─ REFACTOR_PROMPT.md           重构里程碑方案（M1 仓库工程化已完成）
+└─ desktop/                        Electron 客户端（原根目录代码已平移至此）
+   ├─ package.json                 依赖与打包配置（productName 不变）
+   ├─ src/
+   │  ├─ main/
+   │  │  ├─ index.js               装配层：单实例锁 / 生命周期 / 初始化顺序
+   │  │  ├─ core/                  paths / logger / notify / config
+   │  │  ├─ stores/localStore.js   本机 JSON 存储
+   │  │  ├─ services/              aiService（DeepSeek+降级）/ timerService
+   │  │  ├─ windows/               petWindow / panelWindow / tray / index（管理器）
+   │  │  └─ ipc/                   index + store / config / timer / ai / system
+   │  └─ preload/index.js          安全 IPC 桥接（petAPI）
+   ├─ assets/
+   │  ├─ sprites/                  8 个透明 PNG 形象（从插画裁剪）
+   │  ├─ icon.png / icon.ico / tray.png
+   │  ├─ vendor/vue.global.prod.js
+   │  └─ sprites-preview.png
+   └─ renderer/
+      ├─ pet/                      桌宠窗口（状态机 + 气泡 + 就地输入框）
+      └─ panel/
+         ├─ index.html / app.js / panel.css
+         └─ plugins/               插件：translate / chat / tasks / timer / notes / settings
 ```
 
 数据文件位置（`npm start` 或安装版运行后自动生成）：
