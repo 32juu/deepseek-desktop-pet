@@ -6,8 +6,10 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, screen, nativeIma
 const path = require('path');
 const fs = require('fs');
 
-const ROOT = __dirname;
+// desktop/src/main/index.js -> 上两级即 desktop 根目录
+const ROOT = path.resolve(__dirname, '..', '..');
 const ASSETS = path.join(ROOT, 'assets');
+const PRELOAD = path.join(ROOT, 'src', 'preload', 'index.js');
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const PANEL_SIZE = { width: 420, height: 640 };
 
@@ -46,7 +48,7 @@ function createPetWindow() {
     show: false,
     icon: path.join(ASSETS, 'icon.png'),
     webPreferences: {
-      preload: path.join(ROOT, 'preload.js'),
+      preload: PRELOAD,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -99,7 +101,7 @@ function createPanelWindow() {
     show: false,
     icon: path.join(ASSETS, 'icon.png'),
     webPreferences: {
-      preload: path.join(ROOT, 'preload.js'),
+      preload: PRELOAD,
       contextIsolation: true,
       nodeIntegration: false
     }
