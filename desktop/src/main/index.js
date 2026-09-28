@@ -54,7 +54,6 @@ if (!gotLock) {
     // 5) 创建窗口与托盘
     windows.create();
 
-
     // 冒烟测试模式（CI/无头环境验证启动链路）
     if (process.env.PET_SMOKE) {
       setTimeout(() => {

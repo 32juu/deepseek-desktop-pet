@@ -1,4 +1,11 @@
 node_modules/
 dist/
+desktop/dist/
 *.log
 .DS_Store
+
+# 后端（M2 起）与本地环境
+server/.venv/
+__pycache__/
+.env
+*.bak

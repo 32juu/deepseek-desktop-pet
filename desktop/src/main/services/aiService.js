@@ -48,7 +48,9 @@ function createAiService({ getConfig }) {
       }
       const data = await res.json();
       const content =
-        data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+        data.choices && data.choices[0] && data.choices[0].message
+          ? data.choices[0].message.content
+          : '';
       return (content || '').trim();
     } finally {
       clearTimeout(timer);
@@ -78,7 +80,10 @@ function createAiService({ getConfig }) {
     // 未配置 Key 时的免费兜底引擎
     const pair = isZh(text) ? 'zh-CN|en-US' : 'en-US|zh-CN';
     const res = await fetch(
-      'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text.slice(0, 480)) + '&langpair=' + pair
+      'https://api.mymemory.translated.net/get?q=' +
+        encodeURIComponent(text.slice(0, 480)) +
+        '&langpair=' +
+        pair
     );
     if (!res.ok) throw new Error('翻译服务暂时不可用 (' + res.status + ')');
     const data = await res.json();
@@ -161,7 +166,9 @@ function createAiService({ getConfig }) {
         if (m) obj = JSON.parse(m[0]);
       }
       if (!obj || !obj.summary) throw new Error('AI 返回格式异常，请重试');
-      const category = ['工作', '学习', '生活', '灵感'].includes(obj.category) ? obj.category : '其他';
+      const category = ['工作', '学习', '生活', '灵感'].includes(obj.category)
+        ? obj.category
+        : '其他';
       return {
         summary: String(obj.summary),
         category,

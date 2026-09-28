@@ -1,0 +1,8 @@
+# 红线区域：就地输入框坐标逻辑（CLAUDE.md 第 8 节），禁止任何格式化扰动
+renderer/pet/
+# 面板插件沿用原有手写格式，M6 质量收口时再一并纳入
+renderer/panel/
+assets/
+node_modules/
+dist/
+package-lock.json
