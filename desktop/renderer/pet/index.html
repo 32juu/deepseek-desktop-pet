@@ -8,11 +8,13 @@
 <body>
   <div id="bubble" class="bubble hidden"><span id="bubble-text"></span></div>
 
-  <!-- 气泡内那行文案现在是就地输入框（位置与插画原文案完全重合，不新增弹窗） -->
-  <input id="pet-input" type="text" spellcheck="false" />
-  <div id="pet-inline"></div>
+  <!-- 角色与「气泡内那一行」放在同一个动画容器里，保证漂浮时两者严格对齐 -->
+  <div id="pet-stage">
+    <input id="pet-input" type="text" spellcheck="false" />
+    <div id="pet-inline"></div>
 
-  <img id="pet" src="../../assets/sprites/idle.png" alt="pet" draggable="false" />
+    <img id="pet" src="../../assets/sprites/assistant.png" alt="pet" draggable="false" />
+  </div>
   <script src="pet.js"></script>
 </body>
 </html>

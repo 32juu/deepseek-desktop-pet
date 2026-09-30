@@ -59,10 +59,11 @@ desktop/
 ## 4. 状态机（renderer/pet/pet.js）
 
 - **基础态 base**：`idle` / `thinking` / `working` / `sleeping`
+  - **idle 就是「桌面助手/悬浮」那版插画**（2026-09-30 起取消独立 idle 形象，`SPRITES.idle` 指向 `assistant.png`；`idle.png` 保留在 assets 但不再引用）
+  - 因此 flash / thinking / working / sleeping 之外的绝大部分时间，桌宠显示的都是带对话气泡的助手形象
 - **闪现态 flash**：`done` / `encourage` / `confused`，N 秒后回基础态
-- **悬停态**：base 为 idle 且 hover 时 → `assistant`
-- 优先级：`flash > assistant(hover/inline) > base`
-- 5 分钟无操作 → `sleeping`；悬停或点击唤醒
+- 优先级：`flash > base`（已无独立的 assistant 悬停态；是否显示气泡里那一行由 `inlineVisible` 控制）
+- 5 分钟无操作 → `sleeping`；悬停或点击唤醒，并立刻回到助手形象 + 占位文字行
 
 ## 5. IPC / API 契约
 
@@ -101,9 +102,9 @@ desktop/
 
 1. **长按拖拽**：在角色图片上按住 350ms 进入拖拽态，`mousemove` 计算屏幕坐标增量 → `pet:drag-move` → 主进程 `petWin.setPosition`；拖拽结束吞掉本次 click，避免误触发。窗口透明空白处本身也可直接拖（CSS `-webkit-app-region: drag`）。
 2. **双击** → 打开插件面板；**单击** → 随机卖萌语气泡；**右键** → 菜单。
-3. **悬浮就地输入框**（核心特性，见下节）。
+3. **气泡内就地输入框**（核心特性，见下节）。
 
-## 8. 悬浮就地输入框（重要，改动前必读）
+## 8. 气泡内就地输入框（重要，改动前必读）
 
 产品要求：保留原插画版面与交互，**不新增任何弹窗**，把气泡里那行文案变成可编辑输入框。
 
@@ -111,10 +112,12 @@ desktop/
 - `desktop/assets/sprites/assistant.png`（399×336）中第二行中文「x≈104~275、y≈269~283，墨色 #081a40」已被**像素级擦除**（只把比该列背景暗 >8 亮度的像素替换成该列背景色，不破坏渐变）。
   原图备份：`desktop/assets/sprites/assistant-orig.png`。
 - 渲染层用透明 `#pet-input`（输入）+ `#pet-inline`（只读回复行）覆盖该位置，**背景/边框全透明**，因此视觉上就是插画自己的那一行。
-- 坐标换算 `placeInline()`：**不要用 `getBoundingClientRect()`**——各形象宽高比不同，且 `bob` 漂浮动画会带位移。正确做法是用 `getComputedStyle(IMG).maxWidth/maxHeight`（296/318）与 assistant 原始尺寸反推缩放比，再按 `STRIP = {x0:96,x1:300,y0:261,y1:291}` 换算。实测：left 83.2px / width 151.3px / 中心 Y 315.5px。
-- 输入框显示时给 `#pet` 加 `.still` 暂停漂浮动画，保证对齐。
-- 流程：hover → assistant + 预填「有什么需要我帮忙的吗？」→ 聚焦自动全选便于改写 → 回车发送 → 同行显示「思考中…」→ AI 回复 → 6s 后恢复可输入；ESC 收起。
-- 对话进行中会挂起主进程的 base 切换（`pendingBase`），防止立绘切换导致输入框浮空。
+- 坐标换算 `placeInline()`：**不要用 `getBoundingClientRect()`**——各形象宽高比不同，且 `bob` 漂浮动画会带位移。正确做法是用 `getComputedStyle(IMG).maxWidth/maxHeight`（296/318）与 assistant 原始尺寸反推缩放比，再按 `STRIP = {x0:96,x1:300,y0:261,y1:291}` 换算成**相对插画左上角**的偏移。实测绝对位置：left 83.2px / width 151.3px / 中心 Y 315.5px。
+- **图片与这一行必须在同一个 `#pet-stage` 容器里**：漂浮动画 `bob` 挂在容器上（不是 `#pet`），两者才会同步浮动且不错位。因此不要再把 `#pet-input` / `#pet-inline` 挪到 `<body>` 下，也不要靠 `.still` 冻住动画来对齐（那会让桌宠不再浮动）；`.still` 仅用于调试测量。
+- **待机显示占位文字**：`showIdleLine()` 让 `#pet-inline` 显示「有什么需要我帮忙的吗？」，观感与原插画一致；悬浮/点击后切换为可编辑的 `#pet-input`（同一位置）。鼠标移开 400ms 后回到占位文字（**用户已改写的内容不会被清空**）。
+- 切换到非助手形象时（thinking / working / sleeping / flash），`render()` 会自动收起这一行。
+- 流程：回车发送 → 同行显示「思考中…」→ AI 回复 → 6s 后回到占位文字；ESC 放弃编辑并回到占位文字。
+- 待机时输入状态下聚焦会自动全选，方便直接改写（`focus` 事件里 `PET_INPUT.select()`）。
 
 ## 9. 插件面板
 

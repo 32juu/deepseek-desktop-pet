@@ -16,15 +16,23 @@ body {
   justify-content: center;
 }
 
+/* 角色容器：与「气泡内那一行」共用同一个漂浮动画，保证两者始终对齐 */
+#pet-stage {
+  -webkit-app-region: no-drag;
+  position: relative;
+  display: inline-block;
+  animation: bob 3.2s ease-in-out infinite;
+}
+
 #pet {
   -webkit-app-region: no-drag;
+  display: block;
   max-width: 296px;
   max-height: 318px;
   width: auto;
   height: auto;
   cursor: pointer;
   filter: drop-shadow(0 6px 12px rgba(77, 107, 254, 0.20));
-  animation: bob 3.2s ease-in-out infinite;
 }
 
 /* 长按拖拽时的光标反馈 */
@@ -32,7 +40,7 @@ body.dragging,
 body.dragging #pet {
   cursor: grabbing !important;
 }
-body.dragging #pet {
+body.dragging #pet-stage {
   animation: none;
 }
 
@@ -120,5 +128,6 @@ body.dragging #pet {
   text-overflow: ellipsis;
 }
 
-/* 输入框显示期间暂停漂浮动画，保证与插画严格对齐 */
+/* 需要静态对齐时可暂停漂浮动画（输入框显示期间由 JS 添加） */
+#pet-stage.still,
 #pet.still { animation: none; }
