@@ -36,6 +36,23 @@
 | Docker Desktop | 已安装但守护进程未运行 | 本期不用；将来做 Testcontainers 时需启动 |
 | pnpm | 未安装（仅 npm） | 用 npm 即可，或按需 `npm i -g pnpm` |
 
+### 端到端验证记录（已验证的事实，非计划）
+
+| 验证项 | 结果 | 命令 |
+|---|---|---|
+| 迁移脚本可执行 | ✅ 4 个文件全部 OK，26 张表，0 字段缺注释 | `tools/verify-migration.ps1` |
+| 后端启动 + Flyway 建表 | ✅ `Started PetApplication in 4.986s`，5 个迁移 success=1 | `mvn spring-boot:run -Dspring-boot.run.profiles=local` |
+| 健康检查 | ✅ `GET /actuator/health` → 200 `{"status":"UP"}` | — |
+| 种子数据 | ✅ `users` id=1 local 学习者；`pet_settings` proactive_enabled=0 | — |
+| 前端类型检查 | ✅ `tsc --noEmit` exit=0 | `npx tsc --noEmit` |
+| 前端构建 | ✅ Vite 8.3.3，20 模块，225KB JS（gzip 70.7KB） | `npm run build` |
+| Tauri Rust 编译 | ✅ `Finished dev profile in 1m13s` | `cargo check` / `tauri dev` |
+| 桌宠窗口起窗 | ✅ 进程 `pet-desktop`，主窗口标题 `DeepSeek学习助手` | `npm run tauri dev` |
+| 驻留内存（debug） | 80.5 MB（release 未测，按 Tauri 特征应显著更低） | — |
+
+**未验证**：桌宠窗口的实际视觉表现（透明/无边框/置顶是否如预期）、拖拽、托盘菜单、
+真实角色素材渲染。这些需要人眼确认，属于 Phase 1 剩余工作。
+
 ### D2：MVP 不引入 Redis
 
 - 背景：CLAUDE.md 第 10 节规划 MySQL + Redis；但本项目 MVP 为**单用户本地运行**，
@@ -67,6 +84,42 @@
   会话时区 `UTC`、无物理外键、主键有符号 `BIGINT`、字符集 `utf8mb4_0900_ai_ci`，
   以及 API Key 只存 AES-256-GCM 密文、禁止进日志/事件/Trace。
 - 影响：Java 侧需提供 `LocalUser.ID` 与 `SoftDelete.NOT_DELETED` 常量类；前端不做用户切换。
+
+### D13：迁移脚本一经执行即不可修改
+
+- 事实：修掉 `V4__seed_local_user.sql` 里的 `VALUES()` 弃用写法后，已有库启动即报
+  Flyway 校验和失败（`Migration checksum mismatch`）。
+- 决策：**已执行过的脚本不再修改**。若必须修正，新增 `V(n+1)__*.sql`。
+  本次因 MVP 阶段无真实数据，选择"重建库"而非加迁移，属于一次性操作。
+- 本条为操作纪律，后续所有表结构/种子改动都遵守。
+
+### D14：MySQL 8 弃用告警的处理
+
+迁移执行时有两类告警，均已定位：
+
+| 告警 | 来源 | 处理 |
+|---|---|---|
+| `Integer display width is deprecated`（Error 1681） | DDL 中的 `TINYINT(1)` 写法（`docs/database.md` 用 `TINYINT(1)` 表达布尔） | **暂不处理**，见下 |
+| `'VALUES function' is deprecated`（Error 1287） | `V4` 种子的 `ON DUPLICATE KEY UPDATE ... VALUES(col)` | **已修**：改用行别名 `AS new_row` + `new_row.col`，实测零告警且幂等 |
+
+`TINYINT(1)` 的处理判断：
+
+- 它只是**显示宽度**弃用，MySQL 8.1 仍正常执行，布尔语义不受影响；
+- 修改需要改动 `docs/database.md` 中约 20 处 + 重生成全部迁移 + 重建库；
+- 按 CLAUDE.md 第 2.3 条"不过度设计"，**现在不做**。
+- 触发条件：将来因其他原因需要重建 schema 时，一并把 `TINYINT(1)` 改为 `TINYINT`。
+
+### D15：前端与桌面端实现基线
+
+- Tauri **2.12.1**（CLI 与 Rust crate 版本一致）+ React **19** + TypeScript **6** + Vite **8**。
+- Tauri 脚手架生成的 `identifier` 为 `com.黄健安.desktop`（含中文），**必须改**为
+  `com.fishpet.learningassistant`：应用标识符会进入注册表、安装路径与签名，非 ASCII 有风险。
+- 桌宠窗口配置（`tauri.conf.json`）：`transparent` + `decorations:false` + `alwaysOnTop`
+  + `skipTaskbar` + `shadow:false`，尺寸 320×380，label=`pet`。托盘需 `tray-icon` feature（已加）。
+- **状态机与表现解耦**：`desktop/src/pet/petStates.ts` 定义 13 状态/8 表情/层级/触发映射，
+  `usePetMachine.ts` 实现状态流转（system > event > ambient、单次状态自动回落）。
+  业务侧只 `dispatchAction('LEARNING_FINISHED')`，不直接写状态 id，避免业务与视觉耦合。
+- 素材未接入前用 CSS 占位角色（`.pet-body` 等），接素材时只改表现层，不动状态机。
 
 ### D9：DDL 生成与验证工具链
 
