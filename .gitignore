@@ -37,6 +37,8 @@ pnpm-debug.log*
 src-tauri/target/
 **/target/debug/
 **/target/release/
+# Tauri 每次构建自动生成的模式文件，不入库（避免版本升级时的大量无意义 diff）
+src-tauri/gen/schemas/
 
 # ===== IDE =====
 .idea/
