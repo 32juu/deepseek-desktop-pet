@@ -1,0 +1,18 @@
+# 本地覆盖配置示例
+#
+# 用法：复制为 application-local.yml（该文件已 gitignore），填入真实密码后，
+#      以 --spring.profiles.active=local 启动。
+# 切勿把真实密码提交进仓库。
+
+spring:
+  datasource:
+    username: pet_app
+    password: 在这里填数据库密码
+
+spring.ai:
+  openai:
+    api-key: 在这里填 LLM API Key
+
+logging:
+  level:
+    com.fishpet.pet: DEBUG

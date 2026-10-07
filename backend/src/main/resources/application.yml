@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: pet-backend
+
+  # 数据源：账号密码放 application-local.yml（已 gitignore）或环境变量
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/pet_assistant?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${PET_DB_USERNAME:pet_app}
+    password: ${PET_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: pet-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+      max-lifetime: 1800000
+
+  # DDL 真源在 db/migration，禁止 Hibernate/MyBatis 自动建表
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    out-of-order: false
+
+  jackson:
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+    default-property-inclusion: non_null
+
+  # LLM：走 OpenAI 兼容协议，DeepSeek 等国产模型填 base-url + key 即可
+  #
+  # 重要设计：**没有 API Key 也必须能正常启动**。
+  #   桌宠、番茄钟、学习记录、统计都不依赖 LLM，用户可在设置页后填 Key。
+  #
+  # 坑位记录（Spring AI 1.1.x 行为，勿改回自造属性名）：
+  #   spring-ai-starter-model-openai 会注册 chat/embedding/image/audio/moderation 全部自动配置，
+  #   且它们的 @ConditionalOnProperty 是 matchIfMissing=true —— 即默认全开。
+  #   缺 Key 时 OpenAiAudioSpeechModel 构造失败，导致整个应用上下文启动失败。
+  #   正确做法是设置 spring.ai.model.<模态>=none 关闭不用的模态（1.1.x 官方开关），
+  #   而不是 spring.ai.openai.audio.speech.enabled（该属性在 1.1.8 不存在，写了没用）。
+  ai:
+    model:
+      embedding: none
+      image: none
+      moderation: none
+      audio:
+        speech: none
+        transcription: none
+    openai:
+      base-url: ${PET_LLM_BASE_URL:https://api.deepseek.com}
+      # 占位值：真正调用 LLM 时若仍为占位值，应由 ai 模块显式报错并降级，而不是启动失败
+      api-key: ${PET_LLM_API_KEY:not-configured}
+      chat:
+        options:
+          model: ${PET_LLM_MODEL:deepseek-chat}
+          temperature: 0.7
+
+server:
+  port: ${PET_SERVER_PORT:18080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.fishpet.pet
+  configuration:
+    map-underscore-to-camel-case: true
+    default-enum-type-handler: org.apache.ibatis.type.EnumOrdinalTypeHandler
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      # 软删除（docs/database.md 1.8 契约）：哨兵值 '1970-01-01 00:00:00.000' 表示未删除。
+      # logic-delete-field 必须是**数据库列名**（deleted_at），不是 Java 驼峰属性名。
+      logic-delete-field: deleted_at
+      logic-not-delete-value: '1970-01-01 00:00:00.000'
+
+# LLM 配置已合并到上方 spring: 块内（YAML 不允许重复的根级 spring 键）
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    root: INFO
+    com.fishpet.pet: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{traceId:-}] %logger{36} - %msg%n"

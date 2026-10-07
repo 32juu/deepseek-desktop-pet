@@ -1,0 +1,319 @@
+/*
+ * 桌宠窗口样式。
+ * 窗口本身是 transparent + decorations:false（见 src-tauri/tauri.conf.json），
+ * 因此这里背景必须透明，只画角色与轻量状态 UI。
+ *
+ * 配色取自 assets/ 角色图鉴：蓝色 / 深蓝 / 白色。
+ * TODO(Phase 1 续)：当前 .pet-body 是 CSS 占位角色，接入真实素材后删除。
+ */
+
+:root {
+  --fish-blue: #5b8dee;
+  --fish-blue-deep: #2f5fd0;
+  --fish-blue-light: #a8c8ff;
+  --fish-white: #f4f8ff;
+  --fish-shadow: rgba(38, 74, 168, 0.35);
+
+  font-family: 'Segoe UI', 'Microsoft YaHei', Inter, system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  /* 桌宠窗口内文本不可选中，避免拖动时选中文字 */
+  user-select: none;
+}
+
+.pet-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+/* ---------- 角色舞台 ---------- */
+
+.pet-stage {
+  position: relative;
+  width: 200px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 整个角色区域可拖动窗口（Tauri 的 data-tauri-drag-region 由 JS 侧补充） */
+  cursor: grab;
+}
+
+.pet-stage:active {
+  cursor: grabbing;
+}
+
+.pet-body {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50% 50% 46% 46%;
+  background: radial-gradient(circle at 34% 28%, var(--fish-blue-light), var(--fish-blue) 58%, var(--fish-blue-deep));
+  box-shadow: 0 10px 22px var(--fish-shadow), inset -6px -8px 18px rgba(0, 0, 0, 0.12);
+  animation: pet-float 3.2s ease-in-out infinite;
+}
+
+/* 鱼尾：状态不同摆幅不同 */
+.pet-tail {
+  position: absolute;
+  right: -26px;
+  top: 46px;
+  width: 40px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--fish-blue), var(--fish-blue-deep));
+  border-radius: 60% 10% 60% 10%;
+  transform-origin: left center;
+  animation: pet-tail-swing 2.4s ease-in-out infinite;
+}
+
+.pet-eye {
+  position: absolute;
+  top: 52px;
+  width: 13px;
+  height: 17px;
+  border-radius: 50%;
+  background: #16213d;
+  animation: pet-blink 4.6s infinite;
+}
+
+.eye-left {
+  left: 34px;
+}
+
+.eye-right {
+  right: 34px;
+}
+
+.pet-mouth {
+  position: absolute;
+  left: 50%;
+  top: 84px;
+  width: 20px;
+  height: 10px;
+  margin-left: -10px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  background: #16213d;
+  opacity: 0.75;
+}
+
+.pet-bubble {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: var(--fish-white);
+  color: var(--fish-blue-deep);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px var(--fish-shadow);
+}
+
+/* ---------- 状态驱动的表现 ---------- */
+
+/* 学习中：专注、尾巴慢摆、身体微前倾 */
+.pet-root[data-state='learning'] .pet-body {
+  animation: pet-float 4.5s ease-in-out infinite;
+  filter: saturate(1.08);
+}
+.pet-root[data-state='learning'] .pet-tail {
+  animation-duration: 3.6s;
+}
+
+/* 睡眠：闭眼（压扁眼睛）、呼吸变慢 */
+.pet-root[data-state='sleep'] .pet-eye {
+  height: 4px;
+  animation: none;
+}
+.pet-root[data-state='sleep'] .pet-body {
+  animation: pet-breathe 5s ease-in-out infinite;
+}
+
+/* 对话中：身体前倾、嘴巴张合 */
+.pet-root[data-state='talking'] .pet-body {
+  transform: translateY(2px);
+}
+.pet-root[data-state='talking'] .pet-mouth {
+  animation: pet-talk 0.42s ease-in-out infinite;
+}
+
+/* 加载：轻微旋转光晕 */
+.pet-root[data-state='loading'] .pet-body {
+  box-shadow: 0 0 0 4px rgba(168, 200, 255, 0.55), 0 10px 22px var(--fish-shadow);
+  animation: pet-float 1.4s ease-in-out infinite;
+}
+
+/* 开心 / 完成 / 庆祝：跳跃 + 星星态 */
+.pet-root[data-state='happy'] .pet-body,
+.pet-root[data-state='success'] .pet-body {
+  animation: pet-jump 0.6s ease-in-out 2;
+}
+.pet-root[data-state='celebration'] .pet-body {
+  animation: pet-jump 0.5s ease-in-out 4;
+  box-shadow: 0 0 0 6px rgba(255, 214, 102, 0.5), 0 10px 22px var(--fish-shadow);
+}
+
+/* 思考 / 深度学习：凸起眉头（用眼睛上方阴影示意） */
+.pet-root[data-state='thinking'] .pet-body,
+.pet-root[data-state='thinking_hard'] .pet-body {
+  animation: pet-float 5s ease-in-out infinite;
+}
+.pet-root[data-state='thinking_hard'] .pet-eye {
+  height: 12px;
+}
+
+/* 关心提醒：歪头 */
+.pet-root[data-state='concern'] .pet-body {
+  transform: rotate(-6deg);
+}
+
+/* 小生气：鼓起 */
+.pet-root[data-state='angry'] .pet-body {
+  transform: scale(1.06);
+  background: radial-gradient(circle at 34% 28%, #ffc3c3, #f07a7a 58%, #c94b4b);
+}
+
+/* ---------- 关键帧 ---------- */
+
+@keyframes pet-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pet-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.02); }
+}
+
+@keyframes pet-tail-swing {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(10deg); }
+}
+
+@keyframes pet-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+@keyframes pet-talk {
+  0%, 100% { height: 6px; }
+  50% { height: 14px; }
+}
+
+@keyframes pet-jump {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-18px) scale(1.04); }
+}
+
+/* ---------- 状态条与调试面板 ---------- */
+
+.pet-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -8px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: rgba(244, 248, 255, 0.92);
+  color: var(--fish-blue-deep);
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px var(--fish-shadow);
+}
+
+.pet-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b6bfd0;
+}
+
+.pet-status-online .pet-dot {
+  background: #35c46b;
+}
+
+.pet-status-offline .pet-dot {
+  background: #e2574c;
+}
+
+.pet-debug-toggle {
+  margin-top: 6px;
+  padding: 2px 10px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(91, 141, 238, 0.9);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pet-debug {
+  margin-top: 6px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 4px 14px var(--fish-shadow);
+  font-size: 11px;
+}
+
+.pet-debug-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.pet-debug-label {
+  min-width: 40px;
+  color: #6b7a99;
+  font-weight: 600;
+}
+
+.pet-debug button {
+  padding: 2px 7px;
+  border: 1px solid rgba(91, 141, 238, 0.4);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--fish-blue-deep);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pet-debug button:hover {
+  border-color: var(--fish-blue-deep);
+}
+
+.pet-debug-hint {
+  margin: 4px 0 0;
+  color: #8894ab;
+  font-size: 10px;
+  line-height: 1.4;
+}

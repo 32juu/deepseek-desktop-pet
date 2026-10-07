@@ -1,0 +1,31 @@
+[package]
+name = "pet-desktop"
+version = "0.1.0"
+description = "DeepSeek 蓝色大肥鱼 · 桌面 AI 学习助手客户端"
+authors = ["fishpet"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# 保留 _lib 后缀：否则 lib 名会与 bin 名冲突（Windows 上的已知问题）
+name = "pet_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
